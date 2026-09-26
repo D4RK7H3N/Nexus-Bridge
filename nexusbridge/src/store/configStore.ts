@@ -18,7 +18,10 @@ export type ConnectionMode = 'mock' | 'live'
 export type ConnectionStatus = 'mock' | 'connected' | 'unreachable' | 'checking'
 
 /** DarkZ school management system — production gateway backend. */
-export const DEFAULT_BACKEND = 'https://sms2-api.darkzhub.asia'
+export const DEFAULT_BACKEND = 'https://gw.darkzhub.asia'
+
+/** Direct origin, kept as documented bypass/fallback. */
+export const ORIGIN_BACKEND = 'https://sms2-api.darkzhub.asia'
 
 /** Marker returned by the NexusBridge Cloudflare gateway worker. */
 export const GATEWAY_MARKER = 'nexusbridge-gateway'
@@ -57,6 +60,10 @@ interface ConfigState {
   /** true when the configured endpoint is a NexusBridge gateway worker */
   isGateway: boolean
   lastCheckedAt: number | null
+  /** Backend-config modal visibility (shared: TopBar pill + Mesh Connect button) */
+  configModalOpen: boolean
+  openConfig: () => void
+  closeConfig: () => void
   saveLive: (raw: string) => boolean
   testConnection: () => Promise<boolean>
   host: () => string
@@ -70,6 +77,9 @@ export const useConfig = create<ConfigState>()(
       status: 'checking',
       isGateway: false,
       lastCheckedAt: null,
+      configModalOpen: false,
+      openConfig: () => set({ configModalOpen: true }),
+      closeConfig: () => set({ configModalOpen: false }),
 
       saveLive: (raw) => {
         const parsed = normalizeBackendUrl(raw)

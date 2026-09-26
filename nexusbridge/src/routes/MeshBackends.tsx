@@ -18,6 +18,7 @@ import {
 import { Card, SectionHeader } from '../components/ui/Card'
 import { StatusPill } from '../components/ui/StatusPill'
 import { useTelemetry } from '../store/telemetry'
+import { useConfig } from '../store/configStore'
 import type { Tone } from '../theme/tokens'
 import { toneText, toneBgSoft } from '../components/ui/tone'
 import { cn } from '../lib/cn'
@@ -289,6 +290,7 @@ function IntegrateForm() {
 
 export function MeshBackends() {
   const meshUptime = useTelemetry((s) => s.meshUptime)
+  const openConfig = useConfig((s) => s.openConfig)
   const [filter, setFilter] = useState<Lang | 'All'>('All')
 
   const shown = useMemo(() => BACKENDS.filter((b) => filter === 'All' || b.lang === filter), [filter])
@@ -307,7 +309,7 @@ export function MeshBackends() {
         </div>
         <div className="flex flex-col items-end gap-2">
           <span className="pill border border-border-subtle bg-elevated/60 text-muted">mesh-v2.4</span>
-          <button className="btn-primary">
+          <button className="btn-primary" onClick={openConfig}>
             <Radio size={13} /> Connect
           </button>
         </div>

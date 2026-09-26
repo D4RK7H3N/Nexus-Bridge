@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { ChevronDown, Hexagon } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
 import type { Breakpoint } from '../../hooks/useBreakpoint'
@@ -21,7 +20,9 @@ const STATUS_STYLE: Record<string, { dot: string; label: string }> = {
 
 export function TopBar({ bp }: { bp: Breakpoint }) {
   const { pathname } = useLocation()
-  const [configOpen, setConfigOpen] = useState(false)
+  const configOpen = useConfig((s) => s.configModalOpen)
+  const openConfig = useConfig((s) => s.openConfig)
+  const closeConfig = useConfig((s) => s.closeConfig)
   const host = useConfig((s) => s.host())
   const status = useConfig((s) => s.status)
   const isGateway = useConfig((s) => s.isGateway)
@@ -55,7 +56,7 @@ export function TopBar({ bp }: { bp: Breakpoint }) {
 
       {/* backend / env selector */}
       <button
-        onClick={() => setConfigOpen(true)}
+        onClick={openConfig}
         title="Configure backend connection"
         className="flex h-8 items-center gap-2 rounded-full border border-border-subtle bg-elevated/60 px-3 transition-colors hover:border-border-strong"
       >
@@ -65,7 +66,7 @@ export function TopBar({ bp }: { bp: Breakpoint }) {
         </span>
         <ChevronDown size={12} className="text-dim" />
       </button>
-      <BackendConfigModal open={configOpen} onClose={() => setConfigOpen(false)} />
+      <BackendConfigModal open={configOpen} onClose={closeConfig} />
 
       {/* avatar */}
       <span className="relative">

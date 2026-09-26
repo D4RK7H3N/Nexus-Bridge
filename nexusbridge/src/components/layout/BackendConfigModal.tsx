@@ -12,6 +12,7 @@ export function BackendConfigModal({ open, onClose }: { open: boolean; onClose: 
   const cfg = useConfig()
   const [input, setInput] = useState(cfg.backendUrl)
   const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (open) {
@@ -24,14 +25,16 @@ export function BackendConfigModal({ open, onClose }: { open: boolean; onClose: 
   if (!open) return null
 
   const preview = normalizeBackendUrl(input)
-  const checking = cfg.status === 'checking'
 
-  const save = () => {
+  const save = async () => {
     if (!preview) {
       setError(`Enter a valid backend URL or domain, e.g. ${DEFAULT_BACKEND}`)
       return
     }
+    setSaving(true)
     cfg.saveLive(input)
+    await cfg.testConnection()
+    setSaving(false)
     onClose()
   }
 
@@ -100,9 +103,9 @@ export function BackendConfigModal({ open, onClose }: { open: boolean; onClose: 
           </div>
 
           <div className="mt-5 flex gap-2">
-            <button className="btn-primary h-10 flex-1" onClick={save} disabled={checking}>
-              {checking ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
-              Save & Verify Handshake
+            <button className="btn-primary h-10 flex-1" onClick={save} disabled={saving}>
+              {saving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+              {saving ? 'Verifying Handshake…' : 'Save & Verify Handshake'}
             </button>
             <button className="btn-ghost h-10" onClick={onClose}>
               Cancel
