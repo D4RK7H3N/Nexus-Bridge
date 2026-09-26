@@ -1,0 +1,23 @@
+# dependencies / build output
+node_modules/
+dist/
+.wrangler/
+
+# env & local secrets
+.env
+.env.local
+.dev.vars
+
+# design reference material (screenshots, exported code) — not part of the app
+avatar_portrait_*/
+backend_connectors_*/
+backend_scaler_*/
+endpoints_route_proxy/
+nexusbridge_gateway_logo/
+nexus_gateway_console/
+security_governance/
+traffic_bridge_*/
+
+# OS noise
+Thumbs.db
+Desktop.ini

@@ -1,0 +1,143 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply bg-canvas text-ink font-sans antialiased;
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-canvas min-h-screen;
+    font-feature-settings: 'tnum' 1, 'cv05' 1;
+  }
+  /* faint engineering grid backdrop on the root canvas */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(30, 41, 59, 0.22) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(30, 41, 59, 0.22) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 75%);
+    z-index: 0;
+  }
+  #root {
+    position: relative;
+    z-index: 1;
+  }
+  ::selection {
+    background: rgba(6, 182, 212, 0.3);
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #334155 transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 9999px;
+  }
+  input,
+  select,
+  button {
+    @apply outline-none;
+  }
+}
+
+@layer components {
+  /* ---- cards / panels ---- */
+  .card {
+    @apply bg-panel border border-border-subtle rounded-card transition-colors;
+  }
+  .card-hover {
+    @apply hover:border-border-strong;
+  }
+  .card-elevated {
+    @apply bg-elevated/85 border border-border-strong rounded-modal backdrop-blur-md;
+  }
+
+  /* ---- compact 32px controls ---- */
+  .btn {
+    @apply inline-flex h-8 items-center justify-center gap-2 rounded-control px-3
+      text-[13px] font-semibold transition-all select-none whitespace-nowrap
+      disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-primary {
+    @apply btn bg-primary text-canvas hover:bg-primary-bright hover:shadow-glow-cyan;
+  }
+  .btn-secondary {
+    @apply btn border text-secondary-bright hover:border-secondary;
+    background: rgba(139, 92, 246, 0.1);
+    border-color: rgba(139, 92, 246, 0.3);
+  }
+  .btn-ghost {
+    @apply btn border border-border-subtle text-muted hover:bg-subtle hover:text-ink;
+  }
+  .btn-danger {
+    @apply btn border text-crit-bright;
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.35);
+  }
+  .btn-danger:hover {
+    background: rgba(239, 68, 68, 0.16);
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.25);
+  }
+
+  .input {
+    @apply h-8 w-full rounded-control border border-border-subtle bg-canvas px-3
+      text-[13px] text-ink placeholder:text-dim transition-shadow;
+  }
+  .input:focus {
+    @apply border-primary;
+    box-shadow: 0 0 0 1px #06b6d4;
+  }
+
+  /* ---- pills & badges ---- */
+  .pill {
+    @apply inline-flex h-5 items-center gap-1.5 rounded-full px-2 font-mono text-[10px] font-semibold uppercase tracking-wide;
+  }
+
+  .section-label {
+    @apply flex items-center gap-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-muted;
+  }
+
+  .stat-label {
+    @apply font-mono text-[10px] font-semibold uppercase tracking-wider text-dim;
+  }
+
+  /* ---- toggle switch ---- */
+  .switch {
+    @apply relative h-6 w-11 shrink-0 cursor-pointer rounded-full border transition-colors;
+  }
+  .switch[data-on='true'] {
+    @apply border-primary bg-primary shadow-glow-cyan;
+  }
+  .switch[data-on='false'] {
+    @apply border-border-strong bg-elevated;
+  }
+  .switch-thumb {
+    @apply absolute top-0.5 h-[18px] w-[18px] rounded-full bg-white transition-all;
+  }
+  .switch[data-on='true'] .switch-thumb {
+    left: calc(100% - 20px);
+  }
+  .switch[data-on='false'] .switch-thumb {
+    left: 2px;
+    @apply bg-muted;
+  }
+}
+
+@layer utilities {
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+  .tracking-tight-heading {
+    letter-spacing: -0.01em;
+  }
+}
