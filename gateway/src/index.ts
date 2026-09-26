@@ -33,8 +33,10 @@ const MAX_TRACES = 200
 const MAX_LATENCIES = 500
 const MARKER = 'nexusbridge-gateway'
 
+// NOTE: top-level Date.now() is unreliable in Workers (V8 snapshot time can
+// be 0), so startedAt is lazily initialized on the first request.
 const state = {
-  startedAt: Date.now(),
+  startedAt: 0,
   total: 0,
   errors: 0, // 5xx
   throttles: 0, // 429
@@ -110,6 +112,7 @@ async function handleAdmin(url: URL, origin: string | null): Promise<Response> {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    if (!state.startedAt) state.startedAt = Date.now()
     const url = new URL(request.url)
     const origin = request.headers.get('Origin')
 
