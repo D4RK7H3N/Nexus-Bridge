@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from 'react'
+import { useState, useRef, type ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   ArrowDown,
   ArrowRight,
@@ -161,10 +162,13 @@ type Selection =
 export function Traffic() {
   const bp = useBreakpoint()
   const t = useTelemetry()
+  const navigate = useNavigate()
   const [sel, setSel] = useState<Selection>(null)
+  const [sloOpen, setSloOpen] = useState(false)
+  const switchboardRef = useRef<HTMLElement>(null)
   const vertical = bp === 'mobile'
 
-  const latencyTone = t.p95 > 50 ? 'amber' : 'emerald'
+  const latencyTone = t.p95 > t.sloTarget ? 'amber' : 'emerald'
 
   const nodes: DagNodeSpec[] = [
     {
@@ -231,7 +235,7 @@ export function Traffic() {
             </p>
           </div>
         </div>
-        <button className="btn-ghost">
+        <button className="btn-ghost" onClick={() => switchboardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>
           <SlidersHorizontal size={14} />
           <span className="hidden sm:inline">Tuning</span>
         </button>
@@ -313,7 +317,7 @@ export function Traffic() {
               {t.p95.toFixed(1)} <span className="font-mono text-sm text-muted">ms</span>
             </p>
             <p className={cn('mt-0.5 flex items-center gap-1 text-[11px] font-semibold', latencyTone === 'amber' ? 'text-warn-bright' : 'text-tertiary-bright')}>
-              <CheckCircle2 size={12} /> {latencyTone === 'amber' ? 'SLA Warning (≥50ms)' : 'SLA Compliant (<50ms)'}
+              <CheckCircle2 size={12} /> {latencyTone === 'amber' ? `SLA Warning (≥${t.sloTarget}ms)` : `SLA Compliant (<${t.sloTarget}ms)`}
             </p>
             <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-elevated">
               <div
@@ -375,7 +379,7 @@ export function Traffic() {
       </section>
 
       {/* switchboard */}
-      <section>
+      <section ref={switchboardRef}>
         <SectionHeader
           icon={<WaypointsIcon />}
           title="Gateway Switchboard"
@@ -457,9 +461,51 @@ export function Traffic() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <button className="btn-primary"><ListFilter size={13} /> Filter Routes</button>
-              <button className="btn-ghost"><Gauge size={13} /> SLO Policy</button>
+              <button
+                className="btn-primary"
+                onClick={() => {
+                  setSel(null)
+                  navigate('/endpoints')
+                }}
+              >
+                <ListFilter size={13} /> Filter Routes
+              </button>
+              <button className="btn-ghost" onClick={() => setSloOpen((v) => !v)}>
+                <Gauge size={13} /> SLO Policy
+              </button>
             </div>
+            {sloOpen && (
+              <div className="card animate-fade-in p-3">
+                <p className="stat-label">Latency SLO Target · Enforcement</p>
+                <div className="mt-2 flex gap-2">
+                  {[25, 50, 100].map((ms) => (
+                    <button
+                      key={ms}
+                      onClick={() => t.setSloTarget(ms)}
+                      className={cn(
+                        'flex h-8 flex-1 items-center justify-center rounded-control border font-mono text-[11px] font-semibold transition-all',
+                        t.sloTarget === ms
+                          ? 'border-border-accent bg-primary/15 text-primary-bright shadow-glow-cyan'
+                          : 'border-border-subtle text-muted hover:border-border-strong hover:text-ink',
+                      )}
+                    >
+                      {ms}ms
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-2 flex items-center justify-between font-mono text-[10px]">
+                  <span className="text-dim">
+                    Live P95: <span className={cn('font-semibold tnum', latencyTone === 'amber' ? 'text-warn-bright' : 'text-tertiary-bright')}>{t.p95}ms</span>
+                  </span>
+                  <span className={latencyTone === 'amber' ? 'text-warn-bright' : 'text-tertiary-bright'}>
+                    {latencyTone === 'amber' ? '● Breaching' : '● Within budget'}
+                  </span>
+                </div>
+                <p className="mt-1.5 text-[10px] leading-4 text-dim">
+                  SLA badge and alerts flip automatically when P95 crosses the target.
+                </p>
+              </div>
+            )}
           </>
         )}
         {sel?.kind === 'trace' && (

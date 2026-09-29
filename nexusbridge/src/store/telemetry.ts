@@ -160,6 +160,8 @@ interface TelemetryState {
   p99: number
   successRate: number
   liveRoutes: number
+  /** Latency SLO target in ms — drives the SLA badge on the Traffic screen */
+  sloTarget: number
 
   // mesh scaler
   clusterLoad: number
@@ -184,6 +186,7 @@ interface TelemetryState {
   setTracePaused: (v: boolean) => void
   setThreatPaused: (v: boolean) => void
   setReplicaFloor: (v: number) => void
+  setSloTarget: (v: number) => void
   emergencyScaleOut: () => void
   emergencyFlushCache: () => void
   /** Replace mock state with real gateway worker telemetry. */
@@ -222,6 +225,7 @@ export const useTelemetry = create<TelemetryState>((set, get) => ({
   p99: 24,
   successRate: 99.98,
   liveRoutes: 184,
+  sloTarget: 50,
 
   clusterLoad: 64,
   pods: 42,
@@ -310,6 +314,7 @@ export const useTelemetry = create<TelemetryState>((set, get) => ({
   setTracePaused: (v) => set({ traceStreamPaused: v }),
   setThreatPaused: (v) => set({ threatStreamPaused: v }),
   setReplicaFloor: (v) => set({ replicaFloor: v }),
+  setSloTarget: (v) => set({ sloTarget: v }),
   emergencyScaleOut: () => set((s) => ({ pods: s.pods + 5, replicaFloor: Math.min(60, s.replicaFloor + 2) })),
   emergencyFlushCache: () => set({ cacheHit: 4.2, redisHit: 3.1 }),
 

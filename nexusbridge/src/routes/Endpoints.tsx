@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import {
   Cable,
   ChevronDown,
@@ -26,6 +26,8 @@ import { MiniStat } from '../components/ui/StatCard'
 import { JsonViewer } from '../components/ui/JsonViewer'
 import { useTelemetry, type Verb } from '../store/telemetry'
 import { useConfig, DEFAULT_BACKEND } from '../store/configStore'
+import { useBreakpoint } from '../hooks/useBreakpoint'
+import { InspectorDrawer, InspectRow } from '../components/layout/InspectorDrawer'
 import { toneText } from '../components/ui/tone'
 import { cn } from '../lib/cn'
 
@@ -153,7 +155,15 @@ function Chip({
   )
 }
 
-function RouteCard({ route }: { route: RouteSpec }) {
+function RouteCard({
+  route,
+  onInspect,
+  onTest,
+}: {
+  route: RouteSpec
+  onInspect: (r: RouteSpec) => void
+  onTest: (r: RouteSpec) => void
+}) {
   const [open, setOpen] = useState(true)
   return (
     <Card padded={false} className="overflow-hidden">
@@ -218,10 +228,13 @@ function RouteCard({ route }: { route: RouteSpec }) {
 
         {/* actions */}
         <div className="flex gap-2">
-          <button className="btn-ghost flex-1">
+          <button className="btn-ghost flex-1" onClick={() => onInspect(route)}>
             <Workflow size={13} /> {route.actions[0]}
           </button>
-          <button className="btn-secondary flex-1 border-primary/30 bg-primary/10 text-primary-bright hover:border-primary">
+          <button
+            className="btn-secondary flex-1 border-primary/30 bg-primary/10 text-primary-bright hover:border-primary"
+            onClick={() => onTest(route)}
+          >
             <Play size={13} /> {route.actions[1]}
           </button>
         </div>
@@ -230,11 +243,19 @@ function RouteCard({ route }: { route: RouteSpec }) {
   )
 }
 
-function ProbePanel() {
+function ProbePanel({
+  verb,
+  path,
+  setVerb,
+  setPath,
+}: {
+  verb: Verb
+  path: string
+  setVerb: (v: Verb) => void
+  setPath: (p: string) => void
+}) {
   const backendUrl = useConfig((s) => s.backendUrl)
   const backendStatus = useConfig((s) => s.status)
-  const [verb, setVerb] = useState<Verb>('GET')
-  const [path, setPath] = useState('/api/health')
   const [token, setToken] = useState('')
   const [result, setResult] = useState<ProbeResult>({ phase: 'idle' })
 
@@ -392,8 +413,23 @@ function ProbePanel() {
 
 export function Endpoints() {
   const t = useTelemetry()
+  const bp = useBreakpoint()
   const [query, setQuery] = useState('')
   const [proto, setProto] = useState<'All' | Proto>('All')
+
+  // lifted probe state — shared with route-card "Test Endpoint" actions
+  const [probeVerb, setProbeVerb] = useState<Verb>('GET')
+  const [probePath, setProbePath] = useState('/api/health')
+  const probeRef = useRef<HTMLDivElement>(null)
+
+  // mapping inspector
+  const [inspected, setInspected] = useState<RouteSpec | null>(null)
+
+  const handleTest = (r: RouteSpec) => {
+    setProbeVerb(VERBS.includes(r.verb as (typeof VERBS)[number]) ? r.verb : 'GET')
+    setProbePath(r.path)
+    probeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
 
   const filtered = useMemo(
     () =>
@@ -455,7 +491,7 @@ export function Endpoints() {
 
           <div className="space-y-3">
             {filtered.map((r) => (
-              <RouteCard key={r.path} route={r} />
+              <RouteCard key={r.path} route={r} onInspect={setInspected} onTest={handleTest} />
             ))}
             {filtered.length === 0 && (
               <Card className="text-center">
@@ -466,10 +502,66 @@ export function Endpoints() {
         </div>
 
         {/* probe panel — persistent right column on desktop, stacked below on mobile */}
-        <div className="xl:sticky xl:top-20 xl:self-start">
-          <ProbePanel />
+        <div ref={probeRef} className="xl:sticky xl:top-20 xl:self-start">
+          <ProbePanel verb={probeVerb} path={probePath} setVerb={setProbeVerb} setPath={setProbePath} />
         </div>
       </div>
+
+      {/* mapping inspector drawer */}
+      <InspectorDrawer
+        open={inspected !== null}
+        onClose={() => setInspected(null)}
+        bp={bp}
+        title="Route Mapping Inspector"
+        subtitle={inspected ? `${inspected.verb} ${inspected.path}` : undefined}
+      >
+        {inspected && (
+          <>
+            <div className="space-y-1">
+              <InspectRow k="Protocol" v={inspected.proto} />
+              <InspectRow k="Client Ingress" v={inspected.pipeline[0]} tone="text-primary-bright" />
+              <InspectRow k="Middleware" v={inspected.pipeline[1]} tone="text-secondary-bright" />
+              <InspectRow k="Upstream Service" v={inspected.pipeline[2]} tone="text-tertiary-bright" />
+              <InspectRow k="Sync State" v={inspected.pill.label} />
+            </div>
+            <div>
+              <p className="stat-label mb-1.5">Compiled Mapping Config</p>
+              <JsonViewer
+                value={{
+                  route: inspected.path,
+                  method: inspected.verb,
+                  protocol: inspected.proto,
+                  pipeline: {
+                    ingress: inspected.pipeline[0],
+                    middleware: inspected.pipeline[1],
+                    upstream: inspected.pipeline[2],
+                  },
+                  policies: {
+                    sync: inspected.pill.label,
+                    rateLimit: inspected.stats[2]?.value ?? 'unlimited',
+                    circuitBreaker: 'auto',
+                  },
+                  stats: Object.fromEntries(inspected.stats.map((s) => [s.label, s.value])),
+                }}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                className="btn-primary"
+                onClick={() => {
+                  handleTest(inspected)
+                  setInspected(null)
+                }}
+              >
+                <Play size={13} /> Test Endpoint
+              </button>
+              <button className="btn-ghost" onClick={() => setInspected(null)}>
+                Close
+              </button>
+            </div>
+          </>
+        )}
+      </InspectorDrawer>
 
       <p className="flex items-center justify-center gap-2 pb-2 pt-1 font-mono text-[10px] uppercase tracking-widest text-dim">
         Route Mesh Proxy Engine
